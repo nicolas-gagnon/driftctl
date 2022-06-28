@@ -7,9 +7,10 @@ import (
 	"io"
 	"sort"
 
+	terraform2 "github.com/snyk/driftctl/enumeration/terraform"
+
 	"github.com/hashicorp/terraform/providers"
 	"github.com/pkg/errors"
-	"github.com/snyk/driftctl/pkg/terraform"
 	"github.com/snyk/driftctl/test/goldenfile"
 	"github.com/snyk/driftctl/test/mocks"
 	"github.com/snyk/driftctl/test/schemas"
@@ -17,12 +18,12 @@ import (
 )
 
 type FakeTerraformProvider struct {
-	realProvider terraform.TerraformProvider
+	realProvider terraform2.TerraformProvider
 	shouldUpdate bool
 	response     string
 }
 
-func NewFakeTerraformProvider(realProvider terraform.TerraformProvider) *FakeTerraformProvider {
+func NewFakeTerraformProvider(realProvider terraform2.TerraformProvider) *FakeTerraformProvider {
 	return &FakeTerraformProvider{realProvider: realProvider}
 }
 
@@ -39,7 +40,7 @@ func (p *FakeTerraformProvider) WithResponse(response string) *FakeTerraformProv
 	return p
 }
 
-func (p *FakeTerraformProvider) ReadResource(args terraform.ReadResourceArgs) (*cty.Value, error) {
+func (p *FakeTerraformProvider) ReadResource(args terraform2.ReadResourceArgs) (*cty.Value, error) {
 	if p.response == "" {
 		return nil, errors.New("WithResponse should be called before ReadResource to specify a directory to fetch fake response")
 	}
@@ -60,7 +61,7 @@ func (p *FakeTerraformProvider) readSchema() map[string]providers.Schema {
 	return schema
 }
 
-func (p *FakeTerraformProvider) writeResource(args terraform.ReadResourceArgs, readResource *cty.Value, err error) {
+func (p *FakeTerraformProvider) writeResource(args terraform2.ReadResourceArgs, readResource *cty.Value, err error) {
 	var readRes = mocks.ReadResource{
 		Value: readResource,
 		Err:   err,
@@ -74,7 +75,7 @@ func (p *FakeTerraformProvider) writeResource(args terraform.ReadResourceArgs, r
 	goldenfile.WriteFile(p.response, marshalled, fileName)
 }
 
-func (p *FakeTerraformProvider) readResource(args terraform.ReadResourceArgs) (*cty.Value, error) {
+func (p *FakeTerraformProvider) readResource(args terraform2.ReadResourceArgs) (*cty.Value, error) {
 	fileName := p.getFileName(args)
 	content := goldenfile.ReadFile(p.response, fileName)
 	var readRes mocks.ReadResource
@@ -84,7 +85,7 @@ func (p *FakeTerraformProvider) readResource(args terraform.ReadResourceArgs) (*
 	return readRes.Value, readRes.Err
 }
 
-func (p *FakeTerraformProvider) getFileName(args terraform.ReadResourceArgs) string {
+func (p *FakeTerraformProvider) getFileName(args terraform2.ReadResourceArgs) string {
 	suffix := ""
 	keys := make([]string, 0, len(args.Attributes))
 	for k := range args.Attributes {
